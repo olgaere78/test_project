@@ -1,6 +1,7 @@
 import { test as base, Page } from '@playwright/test';
 import { AppApi } from '../api/app-api';
-import { makeTestUser, TestUser } from '../utils/test-data';
+import { makeTestUser } from '../utils/test-data';
+import {TestUser} from '../models/user-model';
 import { requireAccessKey } from '../config/env';
 
 type RegisteredUser = {
@@ -12,7 +13,8 @@ type Fixtures = {
   appApi: AppApi;
   guestUser: TestUser;
   registeredUser: RegisteredUser;
-  authPage: Page;
+  unauthenticatedPage: Page;
+  authorizedPage: Page;
 };
 
 export const appapiTest = base.extend<Fixtures>({
@@ -35,7 +37,7 @@ export const appapiTest = base.extend<Fixtures>({
     });
   },
 
-  page: async ({ page }, use) => {
+  unauthenticatedPage: async ({ page }, use) => {
     await page.route('**/api/**', async (route) => {
       const headers = {
         ...route.request().headers(),
@@ -48,7 +50,16 @@ export const appapiTest = base.extend<Fixtures>({
     await use(page);
   },
 
-  authPage: async ({ page, registeredUser }, use) => {
+  authorizedPage: async ({ page, registeredUser }, use) => {
+    await page.route('**/api/**', async (route) => {
+      const headers = {
+        ...route.request().headers(),
+        'x-access-key': requireAccessKey(),
+      };
+
+      await route.continue({ headers });
+    });
+
     await page.addInitScript((token) => {
       localStorage.setItem('token', token);
     }, registeredUser.token);

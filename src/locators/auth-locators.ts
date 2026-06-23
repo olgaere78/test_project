@@ -46,4 +46,7 @@ export class AuthLocators {
   get loginSubmitButton() {
     return this.page.getByRole('button', { name: 'Войти' });
   }
+  get errorMessage() {
+    return this.page.locator('[data-ui="error-message"]');
+  }
 }

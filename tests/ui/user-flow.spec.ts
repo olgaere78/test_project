@@ -2,7 +2,7 @@ import { test, expect } from '../../src/fixtures/fixtures';
 import { makeTestUser } from '../../src/utils/test-data';
 
 test.describe('User UI flow', () => {
-  test('registers a user and manages a todo', async ({ appApi, app, authPage , registeredUser,}) => {
+  test('registers a user and manages a todo', async ({ appApi, app, authorizedPage , registeredUser,}) => {
     const title = `Smoke todo ${Date.now()}`;
 
     const todo = await appApi.createTodo(
@@ -10,7 +10,7 @@ test.describe('User UI flow', () => {
         title
     );
 
-    await authPage.goto('/');
+    await authorizedPage.goto('/');
     await app.dashboardPage.expectLoaded();
     await app.dashboardPage.expectTodoVisible(title);
     await app.dashboardPage.completeTodo(title);

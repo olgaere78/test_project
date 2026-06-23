@@ -18,36 +18,54 @@ const validTodos = Object.values(todoData.validTitles);
 const invalidTodos = Object.values(todoData.invalidTitles);
 
 for (const title of validTodos) {
-  test(`should create todo with value: ${title}`, async ({
+  test(`should update todo with value: ${title}`, async ({
     registeredUser,
     appApi,
   }) => {
     const todo = await appApi.createTodo(
       registeredUser.token,
-      title
+      'Initial Todo'
     );
 
     createdTodoIds.push(todo._id);
+
+    const updatedTodo = await appApi.updateTodo(
+      registeredUser.token,
+      todo._id,
+      title
+    );
+
+    expect(updatedTodo.title).toBe(title);
 
     const todos = await appApi.getTodos(
       registeredUser.token
     );
 
     expect(
-      todos.some(t => t._id === todo._id)
+      todos.some(
+        t =>
+          t._id === todo._id &&
+          t.title === title
+      )
     ).toBeTruthy();
-
-    expect(todo.title).toBe(title);
   });
 }
 
 for (const title of invalidTodos) {
-  test(`should not create todo with invalid value: ${title}`, async ({
+  test(`should not update todo with invalid value: ${title}`, async ({
     registeredUser,
     appApi,
   }) => {
-    const response = await appApi.createTodo(
+    const todo = await appApi.createTodo(
       registeredUser.token,
+      'Initial Todo'
+    );
+
+    createdTodoIds.push(todo._id);
+
+    const response = await appApi.updateTodo(
+      registeredUser.token,
+      todo._id,
       title
     );
 

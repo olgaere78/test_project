@@ -15,6 +15,30 @@ export class ProfileLocators {
     return this.page.locator('[data-ui="profile-email"]');
   }
 
+  get maleGenderRadio() {
+    return this.page.locator('[data-ui="profile-gender-male"]');
+  }
+
+  get femaleGenderRadio() {
+    return this.page.locator('[data-ui="profile-gender-female"]');
+  }
+
+  get avatarImage() {
+    return this.page.locator('[data-ui="profile-avatar"]');
+  }
+
+  get photoInput() {
+    return this.page.locator('[data-ui="profile-photo-input"]');
+  }
+
+  get replacePhotoButton() {
+    return this.page.locator('[data-ui="profile-replace-photo-button"]');
+  }
+
+  get removePhotoButton() {
+    return this.page.locator('[data-ui="profile-remove-photo-button"]');
+  }
+
   get analyticsConsentCheckbox() {
     return this.page.locator('[data-ui="profile-analytics-consent"]');
   }
@@ -49,5 +73,9 @@ export class ProfileLocators {
 
   get passwordModal() {
     return this.page.locator('[data-ui="password-modal"]');
+  }
+
+  get toastContainer() {
+    return this.page.locator('[data-ui="toast-container"]');
   }
 }

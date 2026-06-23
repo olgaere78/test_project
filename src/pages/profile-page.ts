@@ -13,10 +13,26 @@ export class ProfilePage {
     await expect(this.locators.profileHeading).toBeVisible();
   }
 
-  async updateNameAndConsent(name: string, consent: boolean): Promise<void> {
+  async updateProfile(name: string, consent: boolean, gender?: '0' | '1'): Promise<void> {
     await this.locators.nameInput.fill(name);
+    if (gender === '0') {
+      await this.locators.maleGenderRadio.check();
+    }
+    if (gender === '1') {
+      await this.locators.femaleGenderRadio.check();
+    }
     await this.locators.analyticsConsentCheckbox.setChecked(consent);
     await this.locators.submitButton.click();
+  }
+
+  async updateNameAndConsent(name: string, consent: boolean): Promise<void> {
+    await this.updateProfile(name, consent);
+  }
+
+  async getNameValidationMessage(): Promise<string> {
+    return this.locators.nameInput.evaluate(
+      (el: HTMLInputElement) => el.validationMessage
+    );
   }
 
   async expectPasswordMismatchValidation(): Promise<void> {
@@ -27,5 +43,18 @@ export class ProfilePage {
     await expect(this.locators.passwordFormMessage).toHaveText('Пароли не совпадают');
     await this.locators.passwordModalCancelButton.click();
     await expect(this.locators.passwordModal).toBeHidden();
+  }
+
+  async expectProfileData(name: string, email: string): Promise<void> {
+    await expect(this.locators.nameInput).toHaveValue(name);
+    await expect(this.locators.emailInput).toHaveValue(email);
+  }
+
+  async expectConsentCheckboxState(consent: boolean): Promise<void> {
+    await expect(this.locators.analyticsConsentCheckbox).toHaveJSProperty('checked', consent);
+  }
+
+  async expectGender(gender: '0' | '1'): Promise<void> {
+    await expect(gender === '0' ? this.locators.maleGenderRadio : this.locators.femaleGenderRadio).toBeChecked();
   }
 }
