@@ -1,16 +1,10 @@
 import { APIRequestContext, expect } from '@playwright/test';
 import { env, requireAccessKey } from '../config/env';
 import { TestUser } from '../utils/test-data';
+import { Todo } from '../models/todo-model';
 
 export class AppApi {
-  constructor(private readonly request: APIRequestContext) {}
-
-  private accessHeaders(extra: Record<string, string> = {}): Record<string, string> {
-    return {
-      'X-Access-Key': requireAccessKey(),
-      ...extra,
-    };
-  }
+  constructor(private readonly request: APIRequestContext) { }
 
   async register(user: TestUser) {
     const response = await this.request.post('/api/auth/register', {
@@ -72,5 +66,50 @@ export class AppApi {
     });
     expect(response.ok(), await response.text()).toBeTruthy();
     return response.json();
+  }
+
+  async getTodos(
+    token: string,
+    search = '',
+    status = 'all'
+  ): Promise<Todo[]> {
+    const response = await this.request.get('/api/todos', {
+      headers: {
+        ...this.accessHeaders(),
+        Authorization: `Bearer ${token}`,
+      },
+      params: {
+        status,
+        search,
+        page: 1,
+        limit: 5,
+        sort: 'smart',
+      },
+    });
+
+    expect(response.status()).toBeLessThan(400);
+    const data = await response.json();
+    return data.todos;
+  }
+
+  async deleteTodo(token: string, todoId: string) {
+    const response = await this.request.delete(
+      `/api/todos/${todoId}`,
+      {
+        headers: {
+          ...this.accessHeaders(),
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    expect(response.ok(), await response.text()).toBeTruthy();
+  }
+
+  private accessHeaders(extra: Record<string, string> = {}): Record<string, string> {
+    return {
+      'X-Access-Key': requireAccessKey(),
+      ...extra,
+    };
   }
 }
