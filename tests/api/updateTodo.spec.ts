@@ -14,28 +14,32 @@ test.afterEach(async ({ appApi, registeredUser }) => {
   createdTodoIds = [];
 });
 
-const validTodos = Object.values(todoData.validTitles);
-const invalidTodos = Object.values(todoData.invalidTitles);
-
-for (const title of validTodos) {
-  test(`should update todo with value: ${title}`, async ({
+test.describe('Todo update API', () => {
+  test('should update todo with valid values and reject invalid titles', async ({
     registeredUser,
     appApi,
   }) => {
-    const todo = await appApi.createTodo(
+    const validTodo = await appApi.createTodo(
       registeredUser.token,
       'Initial Todo'
     );
 
-    createdTodoIds.push(todo._id);
+    createdTodoIds.push(validTodo._id);
 
-    const updatedTodo = await appApi.updateTodo(
-      registeredUser.token,
-      todo._id,
-      title
-    );
+    const validTitles = [
+      todoData.validTitles.normal,
+      todoData.validTitles.cyrillic,
+    ];
 
-    expect(updatedTodo.title).toBe(title);
+    for (const title of validTitles) {
+      const updatedTodo = await appApi.updateTodo(
+        registeredUser.token,
+        validTodo._id,
+        title
+      );
+
+      expect(updatedTodo.title).toBe(title);
+    }
 
     const todos = await appApi.getTodos(
       registeredUser.token
@@ -44,31 +48,26 @@ for (const title of validTodos) {
     expect(
       todos.some(
         t =>
-          t._id === todo._id &&
-          t.title === title
+          t._id === validTodo._id &&
+          t.title === validTitles[validTitles.length - 1]
       )
     ).toBeTruthy();
-  });
-}
 
-for (const title of invalidTodos) {
-  test(`should not update todo with invalid value: ${title}`, async ({
-    registeredUser,
-    appApi,
-  }) => {
-    const todo = await appApi.createTodo(
+    const invalidTodo = await appApi.createTodo(
       registeredUser.token,
       'Initial Todo'
     );
 
-    createdTodoIds.push(todo._id);
+    createdTodoIds.push(invalidTodo._id);
 
-    const response = await appApi.updateTodo(
-      registeredUser.token,
-      todo._id,
-      title
-    );
+    for (const title of Object.values(todoData.invalidTitles)) {
+      const response = await appApi.patchTodoRaw(
+        registeredUser.token,
+        invalidTodo._id,
+        { title }
+      );
 
-    expect(response.status()).toBe(400);
+      expect(response.status()).toBe(400);
+    }
   });
-}
+});

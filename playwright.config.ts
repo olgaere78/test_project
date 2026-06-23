@@ -14,6 +14,7 @@ import { env } from './src/config/env';
  */
 export default defineConfig({
   testDir: './tests',
+  timeout: 90_000,
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

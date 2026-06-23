@@ -1,4 +1,4 @@
-import { APIRequestContext, expect } from '@playwright/test';
+import { APIRequestContext, APIResponse, expect } from '@playwright/test';
 import fs from 'node:fs';
 import { env, requireAccessKey } from '../config/env';
 import { TestUser } from '../models/user-model';
@@ -8,7 +8,7 @@ export class AppApi {
   constructor(private readonly request: APIRequestContext) { }
 
   async register(user: TestUser) {
-    const response = await this.request.post('/api/auth/register', {
+    const response = await this.withRateLimitRetry(() => this.request.post('/api/auth/register', {
       headers: this.accessHeaders({ 'Content-Type': 'application/json' }),
       data: {
         name: user.name,
@@ -17,7 +17,7 @@ export class AppApi {
         password: user.password,
         internalAnalyticsConsent: true,
       },
-    });
+    }));
 
     return response;
   }
@@ -29,10 +29,10 @@ export class AppApi {
   }
 
   async loginRaw(email: string, password: string) {
-    const response = await this.request.post('/api/auth/login', {
+    const response = await this.withRateLimitRetry(() => this.request.post('/api/auth/login', {
       headers: this.accessHeaders({ 'Content-Type': 'application/json' }),
       data: { email, password },
-    });
+    }));
 
     return response;
   }
@@ -44,14 +44,7 @@ export class AppApi {
   }
 
   async createTodo(token: string, title: string) {
-    const response = await this.request.post('/api/todos', {
-      headers: {
-        ...this.accessHeaders(),
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      data: { title },
-    });
+    const response = await this.createTodoRaw(token, title);
     expect(response.ok(), await response.text()).toBeTruthy();
 
     const data = await response.json();
@@ -59,10 +52,23 @@ export class AppApi {
     return data.todo;
   }
 
+  async createTodoRaw(token: string, title: string) {
+    const response = await this.withRateLimitRetry(() => this.request.post('/api/todos', {
+      headers: {
+        ...this.accessHeaders(),
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      data: { title },
+    }));
+
+    return response;
+  }
+
   async getProfile(token: string) {
-    const response = await this.request.get('/api/profile', {
+    const response = await this.withRateLimitRetry(() => this.request.get('/api/profile', {
       headers: this.accessHeaders({ Authorization: `Bearer ${token}` }),
-    });
+    }));
     expect(response.ok(), await response.text()).toBeTruthy();
     return response.json();
   }
@@ -77,18 +83,18 @@ export class AppApi {
   }
 
   async getAnalyticsEventsRaw(headers: Record<string, string> = {}) {
-    return this.request.get('/api/analytics/events', {
+    return this.withRateLimitRetry(() => this.request.get('/api/analytics/events', {
       headers: this.accessHeaders(headers),
-    });
+    }));
   }
 
   async getAnalyticsEventsWithoutAccessKey() {
     const credentials = Buffer.from(`${env.analyticsBasicUser}:${env.analyticsBasicPassword}`).toString('base64');
-    return this.request.get('/api/analytics/events', {
+    return this.withRateLimitRetry(() => this.request.get('/api/analytics/events', {
       headers: {
         Authorization: `Basic ${credentials}`,
       },
-    });
+    }));
   }
 
   async getTodos(
@@ -96,7 +102,7 @@ export class AppApi {
     search = '',
     status = 'all'
   ): Promise<Todo[]> {
-    const response = await this.request.get('/api/todos', {
+    const response = await this.withRateLimitRetry(() => this.request.get('/api/todos', {
       headers: {
         ...this.accessHeaders(),
         Authorization: `Bearer ${token}`,
@@ -108,7 +114,7 @@ export class AppApi {
         limit: 5,
         sort: 'smart',
       },
-    });
+    }));
 
     expect(response.status()).toBeLessThan(400);
     const data = await response.json();
@@ -128,14 +134,7 @@ export class AppApi {
     todoId: string,
     data: { title?: string; completed?: boolean }
   ) {
-    const response = await this.request.patch(`/api/todos/${todoId}`, {
-      headers: {
-        ...this.accessHeaders(),
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      data,
-    });
+    const response = await this.patchTodoRaw(token, todoId, data);
     expect(response.ok(), await response.text()).toBeTruthy();
 
     const body = await response.json();
@@ -143,38 +142,55 @@ export class AppApi {
     return body.todo;
   }
 
-  async updateProfile(
+  async patchTodoRaw(
     token: string,
-    data: { name?: string; gender?: '0' | '1'; internalAnalyticsConsent?: boolean; photo?: null }
+    todoId: string,
+    data: { title?: string; completed?: boolean }
   ) {
-    const response = await this.request.patch('/api/profile', {
+    const response = await this.withRateLimitRetry(() => this.request.patch(`/api/todos/${todoId}`, {
       headers: {
         ...this.accessHeaders(),
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       data,
-    });
+    }));
+
+    return response;
+  }
+
+  async updateProfile(
+    token: string,
+    data: { name?: string; gender?: '0' | '1'; internalAnalyticsConsent?: boolean; photo?: null }
+  ) {
+    const response = await this.withRateLimitRetry(() => this.request.patch('/api/profile', {
+      headers: {
+        ...this.accessHeaders(),
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      data,
+    }));
     expect(response.ok(), await response.text()).toBeTruthy();
 
     return response.json();
   }
 
   async changePassword(token: string, newPassword: string, confirmPassword = newPassword) {
-    const response = await this.request.post('/api/profile/password', {
+    const response = await this.withRateLimitRetry(() => this.request.post('/api/profile/password', {
       headers: {
         ...this.accessHeaders(),
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       data: { newPassword, confirmPassword },
-    });
+    }));
 
     return response;
   }
 
   async uploadProfilePhoto(token: string, filePath: string) {
-    const response = await this.request.post('/api/profile/photo', {
+    const response = await this.withRateLimitRetry(() => this.request.post('/api/profile/photo', {
       headers: {
         ...this.accessHeaders(),
         Authorization: `Bearer ${token}`,
@@ -186,21 +202,21 @@ export class AppApi {
           buffer: fs.readFileSync(filePath),
         },
       },
-    });
+    }));
     expect(response.ok(), await response.text()).toBeTruthy();
 
     return response.json();
   }
 
   async logout(token: string) {
-    const response = await this.request.post('/api/auth/logout', {
+    const response = await this.withRateLimitRetry(() => this.request.post('/api/auth/logout', {
       headers: {
         ...this.accessHeaders(),
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       data: {},
-    });
+    }));
     expect(response.ok(), await response.text()).toBeTruthy();
 
     return response;
@@ -208,7 +224,7 @@ export class AppApi {
 
 
   async deleteTodo(token: string, todoId: string) {
-    const response = await this.request.delete(
+    const response = await this.withRateLimitRetry(() => this.request.delete(
       `/api/todos/${todoId}`,
       {
         headers: {
@@ -216,7 +232,7 @@ export class AppApi {
           Authorization: `Bearer ${token}`,
         },
       }
-    );
+    ));
 
     expect(response.ok(), await response.text()).toBeTruthy();
   }
@@ -226,5 +242,20 @@ export class AppApi {
       'X-Access-Key': requireAccessKey(),
       ...extra,
     };
+  }
+
+  private async withRateLimitRetry(operation: () => Promise<APIResponse>): Promise<APIResponse> {
+    const maxAttempts = 6;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const response = await operation();
+      if (response.status() !== 429 || attempt === maxAttempts) {
+        return response;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, attempt * 2_000));
+    }
+
+    return operation();
   }
 }

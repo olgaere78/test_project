@@ -5,7 +5,7 @@ import { makeTestUser } from '../../src/utils/test-data';
 test.describe('Admin UI', () => {
   test.skip(!env.adminEmail || !env.adminPassword, 'ADMIN_LOGIN and ADMIN_PASSWORD are required for admin tests');
 
-  test('admin can log in and find a registered user', async ({ page, appApi, app }) => {
+  test('admin can log in and find a registered user', async ({ unauthenticatedPage, appApi, app }) => {
     const user = makeTestUser();
     await appApi.createUserAndLogin(user);
 

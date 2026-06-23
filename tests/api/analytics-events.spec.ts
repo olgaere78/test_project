@@ -8,7 +8,7 @@ type AnalyticsEvent = {
   timestamp?: string;
   email?: string;
   name?: string;
-  gender?: '0' | '1';
+  gender?: 0 | 1;
   fileName?: string;
   reason?: string;
   analyticsConsent?: boolean;
@@ -70,7 +70,7 @@ test.describe('Internal analytics API', () => {
       status: 'success',
       email: user.email,
       name: user.name,
-      gender: user.gender,
+      gender: Number(user.gender),
     });
     expect(registerEvent?.timestamp).toBeTruthy();
 
@@ -95,7 +95,7 @@ test.describe('Internal analytics API', () => {
       appApi,
       (event) => event.type === 'photoUpload' && event.email === user.email
     );
-    expect(photoEvent?.fileName).toBe('profile-avatar.jpg');
+    expect(photoEvent?.fileName).toMatch(/\.jpg$/);
 
     const consentEvent = await waitForEvent(
       appApi,

@@ -9,6 +9,8 @@ type RegisteredUser = {
   token: string;
 };
 
+let sharedRegisteredUser: Promise<RegisteredUser> | undefined;
+
 type Fixtures = {
   appApi: AppApi;
   guestUser: TestUser;
@@ -27,14 +29,17 @@ export const appapiTest = base.extend<Fixtures>({
   },
 
   registeredUser: async ({ appApi }, use) => {
-    const user = makeTestUser();
+    sharedRegisteredUser ??= (async () => {
+      const user = makeTestUser();
+      const token = await appApi.createUserAndLogin(user);
 
-    const token = await appApi.createUserAndLogin(user);
+      return {
+        user,
+        token,
+      };
+    })();
 
-    await use({
-      user,
-      token,
-    });
+    await use(await sharedRegisteredUser);
   },
 
   unauthenticatedPage: async ({ page }, use) => {

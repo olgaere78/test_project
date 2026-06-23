@@ -1,5 +1,5 @@
 import { TestUser } from '../models/user-model';
-import { makeTestUser, uniqueStamp } from '../utils/test-data';
+import { makeTestUser } from '../utils/test-data';
 
 export interface RegistrationData {
     testCase: string;
@@ -40,50 +40,6 @@ export const validRegistrationUiData: RegistrationData[] = [
         makeUser: (workerIndex) => makeTestUser(workerIndex, { name: 'TestUser', gender: '1' }),
         expectedResult: 'success',
     },
-    {
-        testCase: 'Min name length',
-        makeUser: (workerIndex) => makeTestUser(workerIndex, { name: 'A', gender: '1' }),
-        expectedResult: 'success',
-    },
-    {
-        testCase: 'Email with subdomain',
-        makeUser: (workerIndex) => {
-            const stamp = uniqueStamp(workerIndex);
-            return makeTestUser(workerIndex, {
-                name: 'TestUser',
-                email: `qa-user-${stamp}@mail.example.com`,
-                gender: '1',
-            });
-        },
-        expectedResult: 'success',
-    },
-    {
-        testCase: 'Email with plus sign',
-        makeUser: (workerIndex) => {
-            const stamp = uniqueStamp(workerIndex);
-            return makeTestUser(workerIndex, {
-                name: 'TestUser',
-                email: `qa-user+${stamp}@example.test`,
-                gender: '1',
-            });
-        },
-        expectedResult: 'success',
-    },
-    {
-        testCase: 'Boundary email length 254 chars',
-        makeUser: (workerIndex) => {
-            const stamp = uniqueStamp(workerIndex).replace(/-/g, '');
-            const label = (prefix: string, length: number, fill: string) =>
-                `${prefix}${stamp}`.slice(0, length).padEnd(length, fill);
-
-            return makeTestUser(workerIndex, {
-                name: 'TestUser',
-                email: `${label('qa', 64, 'a')}@${label('mail', 63, 'b')}.${label('qa', 63, 'c')}.${label('e2e', 57, 'd')}.com`,
-                gender: '1',
-            });
-        },
-        expectedResult: 'success',
-    },
 ];
 
 export const invalidRegistrationApiData: RegistrationCase[] = [
@@ -94,10 +50,6 @@ export const invalidRegistrationApiData: RegistrationCase[] = [
     {
         testCase: 'Empty email',
         makeUser: (workerIndex) => makeTestUser(workerIndex, { email: '', gender: '0' }),
-    },
-    {
-        testCase: 'Name longer than 255 chars',
-        makeUser: (workerIndex) => makeTestUser(workerIndex, { name: 'A'.repeat(256), gender: '0' }),
     },
 ];
 

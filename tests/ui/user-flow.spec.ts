@@ -1,5 +1,4 @@
 import { test, expect } from '../../src/fixtures/fixtures';
-import { makeTestUser } from '../../src/utils/test-data';
 
 test.describe('User UI flow', () => {
   test('registers a user and manages a todo', async ({ appApi, app, authorizedPage , registeredUser,}) => {
@@ -17,18 +16,19 @@ test.describe('User UI flow', () => {
     await app.dashboardPage.deleteTodo(title);
   });
 
-  test('updates profile consent and validates password mismatch client-side', async ({ page, appApi, app }) => {
-    const user = makeTestUser();
-    const token = await appApi.createUserAndLogin(user);
-    await page.goto('/');
-    await page.evaluate((value) => localStorage.setItem('token', value), token);
+  test('updates profile consent and validates password mismatch client-side', async ({
+    authorizedPage,
+    registeredUser,
+    app,
+  }) => {
+    await authorizedPage.goto('/');
 
     await app.profilePage.open();
-    await expect(page.locator('[data-ui="profile-email"]')).toHaveValue(user.email);
+    await expect(authorizedPage.locator('[data-ui="profile-email"]')).toHaveValue(registeredUser.user.email);
 
     await app.profilePage.expectPasswordMismatchValidation();
-    await app.profilePage.updateNameAndConsent(`${user.name} Edited`, false);
+    await app.profilePage.updateNameAndConsent(`${registeredUser.user.name} Edited`, false);
 
-    await expect(page).toHaveURL(/\/dashboard\.html$/);
+    await expect(authorizedPage).toHaveURL(/\/dashboard\.html$/);
   });
 });

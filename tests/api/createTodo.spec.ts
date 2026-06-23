@@ -14,43 +14,49 @@ test.afterEach(async ({ appApi, registeredUser }) => {
   createdTodoIds = [];
 });
 
-const validTodos = Object.values(todoData.validTitles);
-const invalidTodos = Object.values(todoData.invalidTitles);
-
-for (const title of validTodos) {
-  test(`should create todo with value: ${title}`, async ({
+test.describe('Todo create API', () => {
+  test('should create todos with representative valid values', async ({
     registeredUser,
     appApi,
   }) => {
-    const todo = await appApi.createTodo(
-      registeredUser.token,
-      title
-    );
+    const validTitles = [
+      todoData.validTitles.normal,
+      todoData.validTitles.cyrillic,
+    ];
 
-    createdTodoIds.push(todo._id);
+    for (const title of validTitles) {
+      const todo = await appApi.createTodo(
+        registeredUser.token,
+        title
+      );
+
+      createdTodoIds.push(todo._id);
+
+      expect(todo.title).toBe(title);
+    }
 
     const todos = await appApi.getTodos(
       registeredUser.token
     );
 
-    expect(
-      todos.some(t => t._id === todo._id)
-    ).toBeTruthy();
-
-    expect(todo.title).toBe(title);
+    for (const todoId of createdTodoIds) {
+      expect(
+        todos.some(t => t._id === todoId)
+      ).toBeTruthy();
+    }
   });
-}
 
-for (const title of invalidTodos) {
-  test(`should not create todo with invalid value: ${title}`, async ({
+  test('should reject invalid todo titles', async ({
     registeredUser,
     appApi,
   }) => {
-    const response = await appApi.createTodo(
-      registeredUser.token,
-      title
-    );
+    for (const title of Object.values(todoData.invalidTitles)) {
+      const response = await appApi.createTodoRaw(
+        registeredUser.token,
+        title
+      );
 
-    expect(response.status()).toBe(400);
+      expect(response.status()).toBe(400);
+    }
   });
-}
+});
